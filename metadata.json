@@ -1,0 +1,6 @@
+{
+  "name": "Custom Flash UI for Visualizations",
+  "description": "Rapidly generate UI to create interactive visualizations, explore variations, and export code.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
