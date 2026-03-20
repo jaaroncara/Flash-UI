@@ -272,6 +272,17 @@ html, body {
     box-shadow: 0 50px 100px -20px rgba(0,0,0,0.8);
     border-color: rgba(255,255,255,0.1);
     cursor: default;
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.stage-container.mode-focus.drawer-open .artifact-card.focused {
+    left: calc(50% - 210px); /* Shift left by half the drawer width */
+    width: calc(90vw - 420px);
+}
+
+.stage-container.mode-focus.drawer-open .action-bar {
+    left: calc(50% - 210px);
+    transform: translateX(-50%) translateY(0);
 }
 
 /* CRITICAL FIX for mobile fixed-positioning drift: Remove perspective/transform from parents when in focus mode */
@@ -332,6 +343,12 @@ html, body {
     z-index: 100;
     padding: 0 20px; box-sizing: border-box;
     pointer-events: none;
+}
+
+.floating-input-container.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
 }
 
 .input-wrapper {
@@ -533,12 +550,14 @@ html, body {
 .action-bar {
     position: absolute;
     bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
     display: flex; flex-direction: column; align-items: center; gap: 12px;
-    opacity: 0; transform: translateY(20px);
-    transition: all 0.4s ease-out 0.2s;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
     z-index: 90; pointer-events: none;
 }
-.action-bar.visible { opacity: 1; transform: translateY(0); }
+.action-bar.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 .active-prompt-label {
     color: var(--text-secondary); font-size: 0.9rem;
     background: rgba(0,0,0,0.5); padding: 6px 12px; border-radius: var(--radius-sm);
@@ -577,15 +596,18 @@ html, body {
 
 /* === Drawer (Common) === */
 .drawer-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(4px);
+    position: fixed; inset: 0; background: transparent;
     z-index: 200; display: flex; justify-content: flex-end;
+    pointer-events: none; /* Allow clicking through to the visualization */
 }
 .drawer-content {
+    pointer-events: auto; /* Re-enable for the drawer itself */
     width: 100%; max-width: 420px;
     background: #0a0a0a;
     border-left: 1px solid var(--border-color);
     display: flex; flex-direction: column;
     animation: slideInRight 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: -20px 0 50px rgba(0,0,0,0.5);
 }
 @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
 

@@ -27,11 +27,10 @@ import {
     XIcon
 } from './components/Icons';
 import * as pdfjs from 'pdfjs-dist';
+// @ts-ignore - Vite handles this import
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-// Standard Vite way to load the worker from the package
-// Fallback to CDN if needed, but hardcode version to match package.json
-const PDFJS_VERSION = '5.5.207';
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -88,14 +87,20 @@ function App() {
     try {
         if (file.type === 'application/pdf') {
             const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-            let text = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const content = await page.getTextContent();
-                text += content.items.map((item: any) => item.str).join(' ') + '\n';
+            try {
+                const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+                let text = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    text += content.items.map((item: any) => item.str).join(' ') + '\n';
+                }
+                setFileContent(text);
+            } catch (pdfError: any) {
+                console.error("PDF parsing failed:", pdfError);
+                setFileName(null);
+                setFileContent(null);
             }
-            setFileContent(text);
         } else {
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -154,6 +159,10 @@ function App() {
   };
 
   const handleOpenRefinement = useCallback(() => {
+    if (drawerState.isOpen && drawerState.mode === 'variations') {
+        setDrawerState(s => ({...s, isOpen: false}));
+        return;
+    }
     const currentSession = sessions[currentSessionIndex];
     if (!currentSession || focusedArtifactIndex === null) return;
     const currentArtifact = currentSession.artifacts[focusedArtifactIndex];
@@ -161,7 +170,7 @@ function App() {
     setComponentVariations([]);
     setRefinementValue('');
     setDrawerState({ isOpen: true, mode: 'variations', title: 'Refine Artifact', data: currentArtifact.id });
-  }, [sessions, currentSessionIndex, focusedArtifactIndex]);
+  }, [sessions, currentSessionIndex, focusedArtifactIndex, drawerState.isOpen, drawerState.mode]);
 
   const handleRefine = useCallback(async () => {
     const currentSession = sessions[currentSessionIndex];
@@ -243,6 +252,10 @@ Return a single, improved version of the component in JSON format.
   };
 
   const handleShowCode = () => {
+      if (drawerState.isOpen && drawerState.mode === 'code') {
+          setDrawerState(s => ({...s, isOpen: false}));
+          return;
+      }
       const currentSession = sessions[currentSessionIndex];
       if (currentSession && focusedArtifactIndex !== null) {
           const artifact = currentSession.artifacts[focusedArtifactIndex];
@@ -536,7 +549,7 @@ Return ONLY RAW HTML. No markdown fences.
         <div className="immersive-app">
             <NetworkGraphBackground />
 
-            <div className={`stage-container ${focusedArtifactIndex !== null ? 'mode-focus' : 'mode-split'}`}>
+            <div className={`stage-container ${focusedArtifactIndex !== null ? 'mode-focus' : 'mode-split'} ${drawerState.isOpen ? 'drawer-open' : ''}`}>
                  <div className={`empty-state ${hasStarted ? 'fade-out' : ''}`}>
                      <div className="empty-content">
                          <h1>Flash UI</h1>
@@ -590,6 +603,12 @@ Return ONLY RAW HTML. No markdown fences.
                     <button onClick={() => setFocusedArtifactIndex(null)}>
                         <GridIcon /> Grid View
                     </button>
+                    <button onClick={() => {
+                        setFocusedArtifactIndex(null);
+                        setTimeout(() => inputRef.current?.focus(), 100);
+                    }}>
+                        <ArrowUpIcon /> New Prompt
+                    </button>
                     <button onClick={handleOpenRefinement} disabled={isLoading}>
                         <SparklesIcon /> Refine
                     </button>
@@ -599,7 +618,7 @@ Return ONLY RAW HTML. No markdown fences.
                  </div>
             </div>
 
-            <div className="floating-input-container">
+            <div className={`floating-input-container ${focusedArtifactIndex !== null ? 'hidden' : ''}`}>
                 <div className={`input-wrapper ${isLoading ? 'loading' : ''}`}>
                     {!isLoading ? (
                         <>
