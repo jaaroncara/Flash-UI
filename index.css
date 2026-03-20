@@ -266,7 +266,7 @@ html, body {
     width: 90vw; max-width: 1200px;
     height: 85vh;
     transform: translate(-50%, -50%);
-    z-index: 100;
+    z-index: 80; /* Below controls */
     opacity: 1;
     pointer-events: auto;
     box-shadow: 0 50px 100px -20px rgba(0,0,0,0.8);
@@ -336,11 +336,11 @@ html, body {
 
 /* === Floating Input === */
 .floating-input-container {
-    position: absolute;
+    position: fixed;
     bottom: 30px;
     width: 100%;
     display: flex; justify-content: center;
-    z-index: 100;
+    z-index: 120;
     padding: 0 20px; box-sizing: border-box;
     pointer-events: none;
 }
@@ -548,16 +548,23 @@ html, body {
 
 /* === Action Bar === */
 .action-bar {
-    position: absolute;
+    position: fixed;
     bottom: 100px;
     left: 50%;
     transform: translateX(-50%) translateY(20px);
     display: flex; flex-direction: column; align-items: center; gap: 12px;
     opacity: 0;
+    visibility: hidden;
     transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-    z-index: 90; pointer-events: none;
+    z-index: 210; /* Above everything including drawer */
+    pointer-events: none;
 }
-.action-bar.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+.action-bar.visible { 
+    opacity: 1; 
+    visibility: visible;
+    transform: translateX(-50%) translateY(0); 
+    pointer-events: auto;
+}
 .active-prompt-label {
     color: var(--text-secondary); font-size: 0.9rem;
     background: rgba(0,0,0,0.5); padding: 6px 12px; border-radius: var(--radius-sm);
@@ -584,9 +591,9 @@ html, body {
 
 /* === Navigation Handles === */
 .nav-handle {
-    position: absolute; top: 50%; transform: translateY(-50%);
+    position: fixed; top: 50%; transform: translateY(-50%);
     background: transparent; border: none; color: var(--text-secondary);
-    padding: 20px; cursor: pointer; z-index: 80;
+    padding: 20px; cursor: pointer; z-index: 210;
     opacity: 0; transition: opacity 0.3s ease, color 0.2s ease;
 }
 .immersive-app:hover .nav-handle { opacity: 0.5; }

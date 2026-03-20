@@ -546,6 +546,88 @@ Return ONLY RAW HTML. No markdown fences.
             )}
         </SideDrawer>
 
+        {canGoBack && (
+            <button className="nav-handle left" onClick={prevItem} aria-label="Previous">
+                <ArrowLeftIcon />
+            </button>
+        )}
+        {canGoForward && (
+            <button className="nav-handle right" onClick={nextItem} aria-label="Next">
+                <ArrowRightIcon />
+            </button>
+        )}
+
+        <div className={`action-bar ${focusedArtifactIndex !== null ? 'visible' : ''}`}>
+             <div className="action-buttons">
+                <button onClick={() => setFocusedArtifactIndex(null)}>
+                    <GridIcon /> Grid View
+                </button>
+                <button onClick={() => {
+                    setFocusedArtifactIndex(null);
+                    setTimeout(() => inputRef.current?.focus(), 100);
+                }}>
+                    <ArrowUpIcon /> New Prompt
+                </button>
+                <button onClick={handleOpenRefinement} disabled={isLoading}>
+                    <SparklesIcon /> Refine
+                </button>
+                <button onClick={handleShowCode}>
+                    <CodeIcon /> Source
+                </button>
+             </div>
+        </div>
+
+        <div className={`floating-input-container ${focusedArtifactIndex !== null ? 'hidden' : ''}`}>
+            <div className={`input-wrapper ${isLoading ? 'loading' : ''}`}>
+                {!isLoading ? (
+                    <>
+                        <textarea 
+                            ref={inputRef}
+                            value={inputValue} 
+                            placeholder="Describe your UI or visualization..."
+                            onChange={handleInputChange} 
+                            onKeyDown={handleKeyDown} 
+                            disabled={isLoading} 
+                        />
+                        <div className="input-controls">
+                            <div className="left-controls">
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    onChange={handleFileUpload} 
+                                    accept=".csv,.txt,.pdf" 
+                                    style={{ display: 'none' }} 
+                                />
+                                {!fileName ? (
+                                    <button 
+                                        className="file-upload-btn" 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isUploading}
+                                    >
+                                        <PaperclipIcon /> {isUploading ? 'Reading...' : 'Add Context (.csv, .txt, .pdf)'}
+                                    </button>
+                                ) : (
+                                    <div className="file-indicator">
+                                        <PaperclipIcon />
+                                        <span>{fileName}</span>
+                                        <button onClick={removeFile}><XIcon /></button>
+                                    </div>
+                                )}
+                            </div>
+                            <button className="send-button" onClick={() => handleSendMessage()} disabled={isLoading || !inputValue.trim()}>
+                                <ArrowUpIcon />
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <div className="input-generating-label">
+                        <span className="generating-prompt-text">{currentSession?.prompt}</span>
+                        <ThinkingIcon />
+                    </div>
+                )}
+            </div>
+        </div>
+
         <div className="immersive-app">
             <NetworkGraphBackground />
 
@@ -582,91 +664,6 @@ Return ONLY RAW HTML. No markdown fences.
                         </div>
                     );
                 })}
-            </div>
-
-             {canGoBack && (
-                <button className="nav-handle left" onClick={prevItem} aria-label="Previous">
-                    <ArrowLeftIcon />
-                </button>
-             )}
-             {canGoForward && (
-                <button className="nav-handle right" onClick={nextItem} aria-label="Next">
-                    <ArrowRightIcon />
-                </button>
-             )}
-
-            <div className={`action-bar ${focusedArtifactIndex !== null ? 'visible' : ''}`}>
-                 <div className="active-prompt-label">
-                    {currentSession?.prompt}
-                 </div>
-                 <div className="action-buttons">
-                    <button onClick={() => setFocusedArtifactIndex(null)}>
-                        <GridIcon /> Grid View
-                    </button>
-                    <button onClick={() => {
-                        setFocusedArtifactIndex(null);
-                        setTimeout(() => inputRef.current?.focus(), 100);
-                    }}>
-                        <ArrowUpIcon /> New Prompt
-                    </button>
-                    <button onClick={handleOpenRefinement} disabled={isLoading}>
-                        <SparklesIcon /> Refine
-                    </button>
-                    <button onClick={handleShowCode}>
-                        <CodeIcon /> Source
-                    </button>
-                 </div>
-            </div>
-
-            <div className={`floating-input-container ${focusedArtifactIndex !== null ? 'hidden' : ''}`}>
-                <div className={`input-wrapper ${isLoading ? 'loading' : ''}`}>
-                    {!isLoading ? (
-                        <>
-                            <textarea 
-                                ref={inputRef}
-                                value={inputValue} 
-                                placeholder="Describe your UI or visualization..."
-                                onChange={handleInputChange} 
-                                onKeyDown={handleKeyDown} 
-                                disabled={isLoading} 
-                            />
-                            <div className="input-controls">
-                                <div className="left-controls">
-                                    <input 
-                                        type="file" 
-                                        ref={fileInputRef} 
-                                        onChange={handleFileUpload} 
-                                        accept=".csv,.txt,.pdf" 
-                                        style={{ display: 'none' }} 
-                                    />
-                                    {!fileName ? (
-                                        <button 
-                                            className="file-upload-btn" 
-                                            onClick={() => fileInputRef.current?.click()}
-                                            disabled={isUploading}
-                                        >
-                                            <PaperclipIcon /> {isUploading ? 'Reading...' : 'Add Context (.csv, .txt, .pdf)'}
-                                        </button>
-                                    ) : (
-                                        <div className="file-indicator">
-                                            <PaperclipIcon />
-                                            <span>{fileName}</span>
-                                            <button onClick={removeFile}><XIcon /></button>
-                                        </div>
-                                    )}
-                                </div>
-                                <button className="send-button" onClick={() => handleSendMessage()} disabled={isLoading || !inputValue.trim()}>
-                                    <ArrowUpIcon />
-                                </button>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="input-generating-label">
-                            <span className="generating-prompt-text">{currentSession?.prompt}</span>
-                            <ThinkingIcon />
-                        </div>
-                    )}
-                </div>
             </div>
         </div>
     </>
