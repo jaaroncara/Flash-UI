@@ -57,7 +57,7 @@ export default function NetworkGraphBackground() {
       ctx.clearRect(0, 0, width, height);
 
       // Update and draw points
-      ctx.fillStyle = 'rgb(255, 255, 255)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
       points.forEach((p) => {
         p.x += p.vx;
         p.y += p.vy;
