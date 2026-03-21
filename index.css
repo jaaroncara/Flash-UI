@@ -717,6 +717,32 @@ html, body {
     color: #fff;
     background: rgba(255,255,255,0.05);
 }
+.code-drawer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.download-code-btn {
+    background: var(--accent-color);
+    color: #000;
+    border: none;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.download-code-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
 .code-block {
     background: rgba(0,0,0,0.3); padding: 20px; border-radius: var(--radius-sm); 
     overflow-x: hidden; font-family: 'Roboto Mono', monospace; font-size: 0.85rem; 

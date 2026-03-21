@@ -24,7 +24,8 @@ import {
     ArrowUpIcon, 
     GridIcon,
     PaperclipIcon,
-    XIcon
+    XIcon,
+    DownloadIcon
 } from './components/Icons';
 import * as pdfjs from 'pdfjs-dist';
 // @ts-ignore - Vite handles this import
@@ -261,6 +262,22 @@ Return a single, improved version of the component in JSON format.
           const artifact = currentSession.artifacts[focusedArtifactIndex];
           setDrawerState({ isOpen: true, mode: 'code', title: 'Source Code', data: artifact.html });
       }
+  };
+
+  const handleDownloadSource = () => {
+    const currentSession = sessions[currentSessionIndex];
+    if (currentSession && focusedArtifactIndex !== null) {
+        const artifact = currentSession.artifacts[focusedArtifactIndex];
+        const blob = new Blob([artifact.html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${artifact.styleName.replace(/\s+/g, '_').toLowerCase()}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
   };
 
   const handleSendMessage = useCallback(async (manualPrompt?: string) => {
@@ -508,7 +525,12 @@ Return ONLY RAW HTML. No markdown fences.
             )}
 
             {drawerState.mode === 'code' && (
-                <pre className="code-block"><code>{drawerState.data}</code></pre>
+                <div className="code-drawer-content">
+                    <button className="download-code-btn" onClick={handleDownloadSource}>
+                        <DownloadIcon /> Download Source
+                    </button>
+                    <pre className="code-block"><code>{drawerState.data}</code></pre>
+                </div>
             )}
             
             {drawerState.mode === 'variations' && (
@@ -573,6 +595,9 @@ Return ONLY RAW HTML. No markdown fences.
                 </button>
                 <button onClick={handleShowCode}>
                     <CodeIcon /> Source
+                </button>
+                <button onClick={handleDownloadSource}>
+                    <DownloadIcon /> Download
                 </button>
              </div>
         </div>
