@@ -491,8 +491,8 @@ Return ONLY RAW HTML. No markdown fences.
 
   return (
     <>
-        <a href="https://x.com/ammaar" target="_blank" rel="noreferrer" className={`creator-credit ${hasStarted ? 'hide-on-mobile' : ''}`}>
-            created by @ammaar
+        <a href="https://github.com/jaaroncara" target="_blank" rel="noreferrer" className={`creator-credit ${hasStarted ? 'hide-on-mobile' : ''}`}>
+            created by @JAARONCARA
         </a>
 
         <SideDrawer 
@@ -572,7 +572,7 @@ Return ONLY RAW HTML. No markdown fences.
                     <SparklesIcon /> Refine
                 </button>
                 <button onClick={handleShowCode}>
-                    <CodeIcon /> Source
+                    <CodeIcon /> Code
                 </button>
              </div>
         </div>
@@ -635,7 +635,7 @@ Return ONLY RAW HTML. No markdown fences.
                  <div className={`empty-state ${hasStarted ? 'fade-out' : ''}`}>
                      <div className="empty-content">
                          <h1>Flash UI</h1>
-                         <p>Interactive Visualization Builder</p>
+                         <p>Build Interactive Data & Info Visualizations</p>
                      </div>
                  </div>
 
