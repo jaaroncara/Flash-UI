@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-//Vibe coded by ammaar@google.com
+//Vibe coded by Joe with the invaluable assistance of Gemini, and a touch of caffeine.
 
 import { GoogleGenAI, Type } from '@google/genai';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -508,8 +508,8 @@ Return ONLY RAW HTML. No markdown fences.
 
   return (
     <>
-        <a href="https://x.com/ammaar" target="_blank" rel="noreferrer" className={`creator-credit ${hasStarted ? 'hide-on-mobile' : ''}`}>
-            created by @ammaar
+        <a href="https://github.com/jaaroncara" target="_blank" rel="noreferrer" className={`creator-credit ${hasStarted ? 'hide-on-mobile' : ''}`}>
+            created by @joeaaroncara
         </a>
 
         <SideDrawer 
@@ -594,7 +594,7 @@ Return ONLY RAW HTML. No markdown fences.
                     <SparklesIcon /> Refine
                 </button>
                 <button onClick={handleShowCode}>
-                    <CodeIcon /> Source
+                    <CodeIcon /> Code
                 </button>
                 <button onClick={handleDownloadSource}>
                     <DownloadIcon /> Download
@@ -660,7 +660,7 @@ Return ONLY RAW HTML. No markdown fences.
                  <div className={`empty-state ${hasStarted ? 'fade-out' : ''}`}>
                      <div className="empty-content">
                          <h1>Flash UI</h1>
-                         <p>Interactive Visualization Builder</p>
+                         <p>Interactive Data & Info Visualization Builder</p>
                      </div>
                  </div>
 
