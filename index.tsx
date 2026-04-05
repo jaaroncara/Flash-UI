@@ -305,7 +305,10 @@ function App() {
             body: JSON.stringify({ fullPrompt })
         });
         
-        if (!styleResp.ok) throw new Error("Failed to fetch styles from server.");
+        if (!styleResp.ok) {
+            const errData = await styleResp.json().catch(() => ({}));
+            throw new Error(errData.error || "Failed to fetch styles from server.");
+        }
 
         const { styles: generatedStylesArray } = await styleResp.json();
         let generatedStyles = generatedStylesArray || [];
@@ -339,7 +342,11 @@ function App() {
                     body: JSON.stringify({ fullPrompt, styleInstruction })
                 });
 
-                if (!response.ok) throw new Error("Failed to stream artifact from server.");
+                if (!response.ok) {
+                    const errData = await response.text();
+                    throw new Error(errData || "Failed to stream artifact from server.");
+                }
+
                 if (!response.body) throw new Error("Response body is empty.");
 
                 const reader = response.body.getReader();
