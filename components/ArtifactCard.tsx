@@ -10,12 +10,14 @@ interface ArtifactCardProps {
     artifact: Artifact;
     isFocused: boolean;
     onClick: () => void;
+    onSave?: () => void;
 }
 
 const ArtifactCard = React.memo(({ 
     artifact, 
     isFocused, 
-    onClick 
+    onClick,
+    onSave
 }: ArtifactCardProps) => {
     const codeRef = useRef<HTMLPreElement>(null);
 
@@ -33,8 +35,16 @@ const ArtifactCard = React.memo(({
             className={`artifact-card ${isFocused ? 'focused' : ''} ${isBlurring ? 'generating' : ''}`}
             onClick={onClick}
         >
-            <div className="artifact-header">
+            <div className="artifact-header" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                 <span className="artifact-style-tag">{artifact.styleName}</span>
+                {onSave && !isBlurring && (
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onSave(); }}
+                        style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', textTransform: 'uppercase', padding: '2px 6px' }}
+                    >
+                        Save
+                    </button>
+                )}
             </div>
             <div className="artifact-card-inner">
                 {isBlurring && (

@@ -10,7 +10,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 
 import { Artifact, Session, ComponentVariation, LayoutOption } from './types';
-import { generateId } from './utils';
+import { generateId, generateExportHtml } from './utils';
 
 import NetworkGraphBackground from './components/NetworkGraphBackground';
 import ArtifactCard from './components/ArtifactCard';
@@ -45,12 +45,22 @@ function App() {
   
   const [drawerState, setDrawerState] = useState<{
       isOpen: boolean;
-      mode: 'code' | 'variations' | null;
+      mode: 'code' | 'variations' | 'collection' | null;
       title: string;
       data: any; 
   }>({ isOpen: false, mode: null, title: '', data: null });
 
   const [componentVariations, setComponentVariations] = useState<ComponentVariation[]>([]);
+
+  const [collection, setCollection] = useState<Artifact[]>(() => {
+      const saved = localStorage.getItem('flashui_collection');
+      return saved ? JSON.parse(saved) : [];
+  });
+  const [selectedForExport, setSelectedForExport] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+      localStorage.setItem('flashui_collection', JSON.stringify(collection));
+  }, [collection]);
 
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -508,9 +518,19 @@ Return ONLY RAW HTML. No markdown fences.
 
   return (
     <>
-        <a href="https://github.com/jaaroncara" target="_blank" rel="noreferrer" className={`creator-credit ${hasStarted ? 'hide-on-mobile' : ''}`}>
-            created by @joeaaroncara
-        </a>
+        <div className={`top-right-actions ${hasStarted ? 'hide-on-mobile' : ''}`} style={{ position: 'fixed', top: 24, right: 24, zIndex: 101, display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button 
+                onClick={() => setDrawerState({ isOpen: true, mode: 'collection', title: `My Collection (${collection.length})`, data: null })}
+                style={{ background: 'rgba(0, 0, 0, 0.4)', border: '1px solid rgba(255, 255, 255, 0.1)', color: 'var(--text-secondary)', padding: '6px 12px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em', backdropFilter: 'blur(4px)', transition: 'all 0.2s' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}
+            >
+                View Collection ({collection.length})
+            </button>
+            <a href="https://github.com/jaaroncara" target="_blank" rel="noreferrer" className="creator-credit" style={{ position: 'relative', top: 'auto', right: 'auto' }}>
+                created by @joeaaroncara
+            </a>
+        </div>
 
         <SideDrawer 
             isOpen={drawerState.isOpen} 
@@ -564,6 +584,70 @@ Return ONLY RAW HTML. No markdown fences.
                              </div>
                         ))}
                     </div>
+                </div>
+            )}
+
+            {drawerState.mode === 'collection' && (
+                <div className="collection-drawer-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', padding: '16px', overflowY: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{color: '#a1a1aa', fontSize: '0.875rem'}}>Select items to export:</span>
+                        <button 
+                            onClick={() => {
+                                const html = generateExportHtml(collection.filter(a => selectedForExport.has(a.id)));
+                                const blob = new Blob([html], { type: 'text/html' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'flashui-collection.html';
+                                a.click();
+                                URL.revokeObjectURL(url);
+                            }}
+                            disabled={selectedForExport.size === 0}
+                            style={{ padding: '8px 16px', background: selectedForExport.size > 0 ? '#fff' : '#27272a', color: selectedForExport.size > 0 ? '#000' : '#71717a', border: 'none', borderRadius: '4px', cursor: selectedForExport.size > 0 ? 'pointer' : 'not-allowed', fontWeight: 500 }}
+                        >
+                            Export Selected to HTML
+                        </button>
+                    </div>
+                    {collection.length === 0 ? (
+                        <div style={{ color: '#71717a', textAlign: 'center', marginTop: '2rem' }}>Collection is empty.</div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {collection.map(art => (
+                                <div key={art.id} style={{ display: 'flex', gap: '12px', background: '#18181b', padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={selectedForExport.has(art.id)}
+                                        onChange={(e) => {
+                                            const newSet = new Set(selectedForExport);
+                                            if (e.target.checked) newSet.add(art.id);
+                                            else newSet.delete(art.id);
+                                            setSelectedForExport(newSet);
+                                        }}
+                                        style={{ width: '20px', height: '20px', accentColor: '#000', cursor: 'pointer' }}
+                                    />
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#fff' }}>{art.styleName}</span>
+                                            <button 
+                                                onClick={() => {
+                                                    setCollection(prev => prev.filter(c => c.id !== art.id));
+                                                    setSelectedForExport(prev => {
+                                                        const newSet = new Set(prev);
+                                                        newSet.delete(art.id);
+                                                        return newSet;
+                                                    });
+                                                }}
+                                                style={{ background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.75rem', textTransform: 'uppercase' }}
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                        <iframe srcDoc={art.html} style={{ width: '100%', height: '150px', border: '1px solid #27272a', borderRadius: '4px', background: '#fff' }} sandbox="allow-scripts allow-same-origin"/>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
         </SideDrawer>
@@ -660,7 +744,7 @@ Return ONLY RAW HTML. No markdown fences.
                  <div className={`empty-state ${hasStarted ? 'fade-out' : ''}`}>
                      <div className="empty-content">
                          <h1>Flash UI</h1>
-                         <p>Interactive Data & Info Visualization Builder</p>
+                         <p>Interactive Visualization & Presentation Builder</p>
                      </div>
                  </div>
 
@@ -682,6 +766,11 @@ Return ONLY RAW HTML. No markdown fences.
                                             artifact={artifact}
                                             isFocused={isFocused}
                                             onClick={() => setFocusedArtifactIndex(aIndex)}
+                                            onSave={() => {
+                                                if (!collection.find(c => c.id === artifact.id)) {
+                                                    setCollection(prev => [...prev, artifact]);
+                                                }
+                                            }}
                                         />
                                     );
                                 })}
