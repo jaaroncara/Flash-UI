@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  flash-ui:
+    # Make sure to update 'your-dockerhub-username' with your actual username when running locally,
+    # or rely on the .env file / UnRaid's template configurations
+    image: ${DOCKERHUB_USERNAME:-your-dockerhub-username}/flash-ui:latest
+    container_name: flash-ui
+    ports:
+      - "8080:80"  # Exposes the NGINX container port 80 to your UnRaid server's port 8080
+    restart: unless-stopped
+    # Useful defaults for UnRaid
+    environment:
+      - PUID=99
+      - PGID=100
+      - TZ=UTC
