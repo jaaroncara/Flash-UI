@@ -216,7 +216,7 @@ Return a single, improved version of the component in JSON format.
 
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: [{ parts: [{ text: prompt }], role: 'user' }],
+            contents: prompt,
             config: { 
                 temperature: 0.7, 
                 responseMimeType: 'application/json',
@@ -244,6 +244,7 @@ Return a single, improved version of the component in JSON format.
         }
     } catch (e: any) {
         console.error("Error refining variation:", e);
+        alert(`Error refining: ${e.message || String(e)}`);
     } finally {
         setIsRefining(false);
     }
@@ -355,7 +356,7 @@ Return ONLY a raw JSON array of 3 *NEW*, creative names for these directions (e.
 
         const styleResponse = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: { role: 'user', parts: [{ text: stylePrompt }] }
+            contents: stylePrompt
         });
 
         let generatedStyles: string[] = [];
@@ -419,7 +420,7 @@ Return ONLY RAW HTML. No markdown fences.
           
                 const responseStream = await ai.models.generateContentStream({
                     model: 'gemini-3-flash-preview',
-                    contents: [{ parts: [{ text: prompt }], role: "user" }],
+                    contents: prompt,
                 });
 
                 let accumulatedHtml = '';
@@ -467,8 +468,14 @@ Return ONLY RAW HTML. No markdown fences.
 
         await Promise.all(placeholderArtifacts.map((art, i) => generateArtifact(art, generatedStyles[i])));
 
-    } catch (e) {
+    } catch (e: any) {
         console.error("Fatal error in generation process", e);
+        setSessions(prev => prev.map(sess => 
+            sess.id === sessionId ? {
+                ...sess,
+                artifacts: sess.artifacts.map(art => ({ ...art, status: 'error', html: `<div style="color:red; padding:10px; background: #222;">Fatal Error: ${e.message || String(e)}</div>` }))
+            } : sess
+        ));
     } finally {
         setIsLoading(false);
         setTimeout(() => inputRef.current?.focus(), 100);
