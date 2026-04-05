@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vectorization Schematic - Flash UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: #0a0a0a;
+            --border: #1a1a1a;
+            --accent: #00ffaa;
+            --text-main: #e5e5e5;
+            --text-dim: #737373;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .grid-bg {
+            background-image: 
+                linear-gradient(to right, #121212 1px, transparent 1px),
+                linear-gradient(to bottom, #121212 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .node { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .edge { transition: stroke 0.3s ease, opacity 0.3s ease; }
+        
+        .active-method {
+            border-left: 3px solid var(--accent);
+            background: rgba(0, 255, 170, 0.03);
+        }
+
+        .metric-bar {
+            height: 4px;
+            background: #1a1a1a;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-fill {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .vector-pixel {
+            width: 12px;
+            height: 12px;
+            transition: transform 0.3s ease, opacity 0.3s ease, background 0.3s ease;
+        }
+
+        .ortho-line {
+            stroke-dasharray: 4;
+            animation: dash 20s linear infinite;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -1000; }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-center p-6 md:p-12">
+
+    <!-- Header -->
+    <header class="w-full max-w-7xl flex justify-between items-end border-b border-[#1a1a1a] pb-6 mb-8">
+        <div>
+            <span class="mono text-[10px] uppercase tracking-[0.2em] text-[#00ffaa]">Technical Schematic v1.0.4</span>
+            <h1 class="text-3xl font-light tracking-tight mt-1">Graph Object Vectorization <span class="text-[#737373]">/ Methods</span></h1>
+        </div>
+        <div class="text-right hidden md:block">
+            <span class="mono text-[10px] uppercase text-[#737373]">Coordinate Reference</span>
+            <p id="coord-display" class="mono text-xs text-[#737373]">0.000, 0.000, 0.000</p>
+        </div>
+    </header>
+
+    <main class="w-full max-w-7xl flex-1 grid grid-cols-12 gap-8 min-h-0">
+        
+        <!-- Controls Sidebar -->
+        <aside class="col-span-12 lg:col-span-3 flex flex-col gap-2">
+            <div id="method-container" class="space-y-1">
+                <!-- Methods will be injected here -->
+            </div>
+
+            <div class="mt-auto p-4 border border-[#1a1a1a] bg-[#080808]">
+                <h3 class="mono text-[10px] uppercase text-[#737373] mb-4">Metric Comparison</h3>
+                <div id="metrics-panel" class="space-y-4">
+                    <!-- Metrics will be injected here -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Visualization Stage -->
+        <section class="col-span-12 lg:col-span-9 relative border border-[#1a1a1a] bg-[#070707] grid-bg overflow-hidden flex flex-col">
+            
+            <!-- SVG Viewport -->
+            <div class="flex-1 relative cursor-crosshair" id="stage">
+                <svg id="schematic-svg" class="w-full h-full">
+                    <!-- Edges Layer -->
+                    <g id="edges-layer"></g>
+                    <!-- Nodes Layer -->
+                    <g id="nodes-layer"></g>
+                    <!-- Transformation Overlay -->
+                    <g id="transform-layer"></g>
+                </svg>
+
+                <!-- Vector Result Overlay -->
+                <div class="absolute bottom-6 right-6 p-4 bg-black/80 border border-[#1a1a1a] backdrop-blur-sm w-48">
+                    <span class="mono text-[10px] text-[#737373] block mb-3 uppercase">Latent Space Projection</span>
+                    <div id="vector-grid" class="grid grid-cols-8 gap-1">
+                        <!-- Vector blocks injected here -->
+                    </div>
+                </div>
+
+                <!-- Labels -->
+                <div class="absolute top-6 left-6 flex flex-col gap-1">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 bg-[#00ffaa]"></div>
+                        <span class="mono text-[10px] uppercase">Active Subgraph Selection</span>
+                    </div>
+                    <div class="flex items-center gap-2 opacity-40">
+                        <div class="w-2 h-2 bg-white"></div>
+                        <span class="mono text-[10px] uppercase">Input Domain: $\mathcal{G}(V, E)$</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log / Info Bar -->
+            <div class="h-16 border-t border-[#1a1a1a] flex items-center px-6 bg-black/50">
+                <div class="flex items-center gap-4">
+                    <span class="mono text-[11px] text-[#00ffaa] animate-pulse">● RUNNING</span>
+                    <p id="method-desc" class="text-sm text-[#a3a3a3] font-light max-w-2xl truncate">Select a vectorization method to visualize the algorithmic flow.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const methods = [
+            {
+                id: 'mf',
+                name: 'Matrix Factorization',
+                desc: 'Decomposes adjacency matrices into low-rank representations using SVD or LE.',
+                metrics: { locality: 40, complexity: 90, scalability: 30 },
+                logic: 'matrix'
+            },
+            {
+                id: 'rw',
+                name: 'Random Walk (Node2Vec)',
+                desc: 'Simulates second-order biased random walks to capture neighborhood structures.',
+                metrics: { locality: 85, complexity: 45, scalability: 75 },
+                logic: 'path'
+            },
+            {
+                id: 'gnn',
+                name: 'Message Passing (GCN)',
+                desc: 'Aggregates feature information from local neighborhoods via neural convolutions.',
+                metrics: { locality: 95, complexity: 85, scalability: 60 },
+                logic: 'flow'
+            },
+            {
+                id: 'st',
+                name: 'Structural Identity',
+                desc: 'Embeds nodes based on structural similarity (degree, graphlets) rather than proximity.',
+                metrics: { locality: 10, complexity: 55, scalability: 85 },
+                logic: 'pattern'
+            }
+        ];
+
+        const nodes = [
+            { id: 1, x: 200, y: 150 }, { id: 2, x: 400, y: 100 },
+            { id: 3, x: 600, y: 150 }, { id: 4, x: 300, y: 300 },
+            { id: 5, x: 500, y: 300 }, { id: 6, x: 400, y: 450 },
+            { id: 7, x: 150, y: 350 }, { id: 8, x: 650, y: 350 }
+        ];
+
+        const edges = [
+            [1, 2], [2, 3], [1, 4], [2, 4], [2, 5], [3, 5], 
+            [4, 6], [5, 6], [4, 7], [5, 8], [7, 6], [8, 6]
+        ];
+
+        let activeMethod = methods[1];
+
+        function init() {
+            renderMethodList();
+            renderGraph();
+            renderVectorGrid();
+            selectMethod('rw');
+            
+            // Mouse tracking
+            document.addEventListener('mousemove', (e) => {
+                const display = document.getElementById('coord-display');
+                display.innerText = `${(e.clientX/100).toFixed(3)}, ${(e.clientY/100).toFixed(3)}, ${(Math.random()*0.1).toFixed(3)}`;
+            });
+        }
+
+        function renderMethodList() {
+            const container = document.getElementById('method-container');
+            container.innerHTML = methods.map(m => `
+                <button onclick="selectMethod('${m.id}')" id="btn-${m.id}" class="w-full text-left p-4 border border-transparent hover:border-[#222] transition-all group">
+                    <span class="mono text-[10px] text-[#737373] group-hover:text-[#00ffaa] mb-1 block">${m.id.toUpperCase()}</span>
+                    <h4 class="text-sm font-medium tracking-wide">${m.name}</h4>
+                </button>
+            `).join('');
+        }
+
+        function renderMetrics(m) {
+            const container = document.getElementById('metrics-panel');
+            const metrics = [
+                { label: 'Spatial Locality', val: m.metrics.locality },
+                { label: 'Compute Complexity', val: m.metrics.complexity },
+                { label: 'Scale Potential', val: m.metrics.scalability }
+            ];
+
+            container.innerHTML = metrics.map(mt => `
+                <div>
+                    <div class="flex justify-between mono text-[9px] mb-1">
+                        <span class="text-[#737373] uppercase">${mt.label}</span>
+                        <span>${mt.val}%</span>
+                    </div>
+                    <div class="metric-bar"><div class="metric-fill" style="width: ${mt.val}%"></div></div>
+                </div>
+            `).join('');
+        }
+
+        function renderGraph() {
+            const svg = document.getElementById('schematic-svg');
+            const edgeLayer = document.getElementById('edges-layer');
+            const nodeLayer = document.getElementById('nodes-layer');
+
+            edgeLayer.innerHTML = edges.map(e => {
+                const n1 = nodes.find(n => n.id === e[0]);
+                const n2 = nodes.find(n => n.id === e[1]);
+                return `<line x1="${n1.x}" y1="${n1.y}" x2="${n2.x}" y2="${n2.y}" class="edge" stroke="#222" stroke-width="1" id="edge-${e[0]}-${e[1]}" />`;
+            }).join('');
+
+            nodeLayer.innerHTML = nodes.map(n => `
+                <g class="node" transform="translate(${n.x}, ${n.y})" id="node-${n.id}">
+                    <rect x="-4" y="-4" width="8" height="8" fill="#111" stroke="#444" stroke-width="1" />
+                    <text x="10" y="4" class="mono text-[8px]" fill="#444">${n.id.toString(16).padStart(2, '0')}</text>
+                </g>
+            `).join('');
+        }
+
+        function renderVectorGrid() {
+            const grid = document.getElementById('vector-grid');
+            grid.innerHTML = Array.from({length: 32}).map((_, i) => `
+                <div class="vector-pixel bg-[#111]" id="vpx-${i}"></div>
+            `).join('');
+        }
+
+        function selectMethod(id) {
+            const method = methods.find(m => m.id === id);
+            activeMethod = method;
+
+            // UI State
+            methods.forEach(m => {
+                document.getElementById(`btn-${m.id}`).className = `w-full text-left p-4 border border-transparent hover:border-[#222] transition-all group ${m.id === id ? 'active-method' : ''}`;
+            });
+
+            document.getElementById('method-desc').innerText = method.desc;
+            renderMetrics(method);
+            animateGraphEffect(method.logic);
+            updateVectorVisual();
+        }
+
+        function animateGraphEffect(logic) {
+            // Reset
+            const allEdges = document.querySelectorAll('.edge');
+            const allNodes = document.querySelectorAll('.node rect');
+            allEdges.forEach(e => { e.setAttribute('stroke', '#222'); e.setAttribute('stroke-width', '1'); e.classList.remove('ortho-line'); });
+            allNodes.forEach(n => { n.setAttribute('fill', '#111'); n.setAttribute('stroke', '#444'); });
+
+            if (logic === 'path') {
+                const path = [1, 2, 4, 6, 5, 8];
+                path.forEach((nId, i) => {
+                    setTimeout(() => {
+                        const node = document.querySelector(`#node-${nId} rect`);
+                        node.setAttribute('fill', '#00ffaa');
+                        node.setAttribute('stroke', '#00ffaa');
+                        if (i < path.length - 1) {
+                            const edge = document.querySelector(`#edge-${path[i]}-${path[i+1]}`) || document.querySelector(`#edge-${path[i+1]}-${path[i]}`);
+                            if (edge) {
+                                edge.setAttribute('stroke', '#00ffaa');
+                                edge.setAttribute('stroke-width', '2');
+                            }
+                        }
+                    }, i * 100);
+                });
+            } else if (logic === 'flow') {
+                const center = 4;
+                const neighbors = [1, 2, 6, 7];
+                document.querySelector(`#node-${center} rect`).setAttribute('fill', '#00ffaa');
+                neighbors.forEach((nId, i) => {
+                    setTimeout(() => {
+                        const edge = document.querySelector(`#edge-${center}-${nId}`) || document.querySelector(`#edge-${nId}-${center}`);
+                        if (edge) {
+                            edge.setAttribute('stroke', '#00ffaa');
+                            edge.setAttribute('stroke-width', '2');
+                            edge.classList.add('ortho-line');
+                        }
+                        document.querySelector(`#node-${nId} rect`).setAttribute('stroke', '#00ffaa');
+                    }, i * 150);
+                });
+            } else if (logic === 'matrix') {
+                allEdges.forEach(e => { e.setAttribute('stroke', '#333'); });
+                allNodes.forEach((n, i) => {
+                    if (i % 2 === 0) n.setAttribute('fill', '#00ffaa');
+                });
+            } else if (logic === 'pattern') {
+                const groupA = [1, 3, 7, 8];
+                groupA.forEach(nId => {
+                    const node = document.querySelector(`#node-${nId} rect`);
+                    node.setAttribute('fill', '#00ffaa');
+                    node.setAttribute('stroke', '#00ffaa');
+                    node.setAttribute('transform', 'scale(1.5)');
+                    setTimeout(() => node.setAttribute('transform', 'scale(1)'), 500);
+                });
+            }
+        }
+
+        function updateVectorVisual() {
+            const pixels = document.querySelectorAll('.vector-pixel');
+            pixels.forEach((p, i) => {
+                const val = Math.random();
+                p.style.opacity = '0.2';
+                setTimeout(() => {
+                    p.style.background = val > 0.5 ? '#00ffaa' : '#222';
+                    p.style.opacity = val > 0.5 ? '1' : '0.3';
+                    p.style.transform = `scale(${0.5 + val * 0.5})`;
+                }, i * 15);
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
