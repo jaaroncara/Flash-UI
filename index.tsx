@@ -5,7 +5,6 @@
 
 //Vibe coded by Joe with the invaluable assistance of Gemini, and a touch of caffeine.
 
-import { GoogleGenAI, Type } from '@google/genai';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -193,54 +192,23 @@ function App() {
     setRefinementValue('');
 
     try {
-        const apiKey = process.env.API_KEY;
-        if (!apiKey) throw new Error("API_KEY is not configured.");
-        const ai = new GoogleGenAI({ apiKey });
-
-        const prompt = `
-You are a master UI/UX designer. Your task is to surgically refine an existing UI component based on a specific user request.
-
-**CRITICAL INSTRUCTION:**
-Keep the new version as close as possible to the original. Maintain the layout, color palette, and overall "vibe" unless the user explicitly asks to change them. Only modify the specific elements or properties mentioned in the request.
-
-**ORIGINAL COMPONENT HTML:**
-${currentArtifact.html}
-
-**USER REFINEMENT REQUEST:**
-"${userRefinement}"
-
-**OUTPUT:**
-Return a single, improved version of the component in JSON format.
-{ "name": "Refined Version", "html": "..." }
-        `.trim();
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
-            config: { 
-                temperature: 0.7, 
-                responseMimeType: 'application/json',
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        name: { type: Type.STRING },
-                        html: { type: Type.STRING }
-                    },
-                    required: ['name', 'html']
-                }
-            }
+        const response = await fetch('/api/refine', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                html: currentArtifact.html, 
+                userRefinement 
+            })
         });
 
-        const text = response.text;
-        if (text) {
-            try {
-                const variation = JSON.parse(text);
-                if (variation.name && variation.html) {
-                    setComponentVariations(prev => [variation, ...prev]);
-                }
-            } catch (e) {
-                console.error("Failed to parse refinement JSON", e);
-            }
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || response.statusText);
+        }
+
+        const variation = await response.json();
+        if (variation.name && variation.html) {
+            setComponentVariations(prev => [variation, ...prev]);
         }
     } catch (e: any) {
         console.error("Error refining variation:", e);
@@ -331,45 +299,16 @@ Return a single, improved version of the component in JSON format.
     removeFile();
 
     try {
-        const apiKey = process.env.API_KEY;
-        if (!apiKey) throw new Error("API_KEY is not configured.");
-        const ai = new GoogleGenAI({ apiKey });
-
-        const stylePrompt = `
-Generate 3 distinct, minimalist design directions for an interactive visual component: "${fullPrompt}".
-
-**FOCUS:**
-Interactive charts, data visualizations, complex diagrams, or specialized UX/UI designs.
-
-**STRICT IP SAFEGUARD:**
-Never use artist or brand names. Use technical, structural, and data-driven metaphors.
-
-**CREATIVE EXAMPLES (Use as a guide for tone):**
-- Example A: "Monochrome Vector Precision" (Sharp lines, high contrast, technical drafting aesthetic, focus on data density).
-- Example B: "Kinetic Data Topology" (Fluid transitions, interconnected nodes, elevation-based depth, focus on relationship mapping).
-- Example C: "Minimalist Brutalist Interface" (Heavy borders, monospace typography, raw layout, focus on functional clarity).
-- Example D: "Atmospheric Glass Projection" (Subtle blurs, light-based hierarchy, translucent layers, focus on immersive data).
-
-**GOAL:**
-Return ONLY a raw JSON array of 3 *NEW*, creative names for these directions (e.g. ["Vector Precision Grid", "Kinetic Node Topology", "Brutalist Data Matrix"]).
-        `.trim();
-
-        const styleResponse = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: stylePrompt
+        const styleResp = await fetch('/api/styles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fullPrompt })
         });
-
-        let generatedStyles: string[] = [];
-        const styleText = styleResponse.text || '[]';
-        const jsonMatch = styleText.match(/\[[\s\S]*\]/);
         
-        if (jsonMatch) {
-            try {
-                generatedStyles = JSON.parse(jsonMatch[0]);
-            } catch (e) {
-                console.warn("Failed to parse styles, using fallbacks");
-            }
-        }
+        if (!styleResp.ok) throw new Error("Failed to fetch styles from server.");
+
+        const { styles: generatedStylesArray } = await styleResp.json();
+        let generatedStyles = generatedStylesArray || [];
 
         if (!generatedStyles || generatedStyles.length < 3) {
             generatedStyles = [
@@ -394,49 +333,34 @@ Return ONLY a raw JSON array of 3 *NEW*, creative names for these directions (e.
 
         const generateArtifact = async (artifact: Artifact, styleInstruction: string) => {
             try {
-                const prompt = `
-You are Flash UI, an elite designer and developer. Create a stunning, interactive, and minimalist visual component for: "${fullPrompt}".
-
-**CONCEPTUAL DIRECTION: ${styleInstruction}**
-
-**COMPONENT TYPE:**
-Focus on interactive charts, data visualizations, complex diagrams, or specialized UX/UI designs.
-
-**VISUAL EXECUTION RULES:**
-1. **Minimalism**: Eliminate all non-essential elements. Use whitespace as a structural tool.
-2. **Interactivity**: The component MUST be interactive. Use standard Web APIs (Canvas, SVG) or lightweight logic for hover states, clicks, and data transitions.
-3. **Typography**: Use high-quality system fonts or Google Fonts. Pair a clean sans-serif with a technical monospace for data values.
-4. **IP SAFEGUARD**: No artist names, trademarks, or copyrighted brands.
-5. **Layout**: Use sharp edges, visible grids, and clear hierarchy. Avoid generic "modern" cards.
-6. **Data**: Use realistic, evocative mock data that fits the prompt.
-
-**TECHNICAL REQUIREMENTS:**
-- Use Tailwind CSS for styling.
-- Use D3.js or Recharts if complex charting is required (assume they are available via CDN if needed, but prefer standard SVG/Canvas for performance).
-- Ensure the code is self-contained and high-performance.
-
-Return ONLY RAW HTML. No markdown fences.
-          `.trim();
-          
-                const responseStream = await ai.models.generateContentStream({
-                    model: 'gemini-3-flash-preview',
-                    contents: prompt,
+                const response = await fetch('/api/artifact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullPrompt, styleInstruction })
                 });
 
+                if (!response.ok) throw new Error("Failed to stream artifact from server.");
+                if (!response.body) throw new Error("Response body is empty.");
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
                 let accumulatedHtml = '';
-                for await (const chunk of responseStream) {
-                    const text = chunk.text;
-                    if (typeof text === 'string') {
-                        accumulatedHtml += text;
-                        setSessions(prev => prev.map(sess => 
-                            sess.id === sessionId ? {
-                                ...sess,
-                                artifacts: sess.artifacts.map(art => 
-                                    art.id === artifact.id ? { ...art, html: accumulatedHtml } : art
-                                )
-                            } : sess
-                        ));
-                    }
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    accumulatedHtml += chunk;
+                    
+                    setSessions(prev => prev.map(sess => 
+                        sess.id === sessionId ? {
+                            ...sess,
+                            artifacts: sess.artifacts.map(art => 
+                                art.id === artifact.id ? { ...art, html: accumulatedHtml } : art
+                            )
+                        } : sess
+                    ));
                 }
                 
                 let finalHtml = accumulatedHtml.trim();

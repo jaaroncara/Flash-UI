@@ -11,14 +11,21 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Stage 2: Serve the application using NGINX
-FROM nginx:alpine
+# Stage 2: Serve the application using Node.js
+FROM node:20-alpine
 
-# Copy built assets from builder stage
-COPY --from=build /app/dist /usr/share/nginx/html
+WORKDIR /app
 
-# Expose port (standard HTTP port)
-EXPOSE 80
+# Copy backend server, package.json
+COPY server.mjs package.json ./
+# Copy built frontend assets
+COPY --from=build /app/dist ./dist
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Install production dependencies only (express, cors, dotenv, @google/genai)
+RUN npm install --omit=dev
+
+# Expose Node.js port (configured in server.mjs to use PORT env var or 3001)
+EXPOSE 3001
+
+# Start the Express server
+CMD ["node", "server.mjs"]
